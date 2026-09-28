@@ -1,0 +1,19 @@
+name: Bug report
+description: Report a reproducible source or runtime problem
+body:
+  - type: textarea
+    attributes:
+      label: Version and environment
+      description: Include commit, OS and Node version. Never include secrets.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Reproduction and expected result
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Actual result and redacted evidence
+    validations:
+      required: true

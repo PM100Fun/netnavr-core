@@ -1,0 +1,8 @@
+NetNavr
+Copyright 2026 The NetNavr Authors
+
+Core source imported from https://github.com/PM100Fun/NetNavr
+at commit ca6002d580cef51cab869a3a65cbcddc2dfed3c1 (v0.2.33).
+The repository split adds packaging, a shared contract export, independent CI
+and repository community files. Legacy history is retained in the source
+repository and is not imported into this repository.

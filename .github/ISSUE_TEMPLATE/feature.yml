@@ -1,0 +1,13 @@
+name: Feature proposal
+description: Discuss a bounded improvement
+body:
+  - type: textarea
+    attributes:
+      label: User problem and proposed result
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Scope, compatibility and acceptance criteria
+    validations:
+      required: true
