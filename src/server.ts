@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -17,6 +16,8 @@ import {
 } from "./node-store.ts";
 import { acquireCoreRuntimeLock, type CoreRuntimeLock } from "./runtime-lock.ts";
 import { prepareCoreStoragePath } from "./storage-permissions.ts";
+import { FixtureProbe, type FixtureProbeOptions } from "./fixture-probe.ts";
+import packageMetadata from "../package.json" with { type: "json" };
 
 // Modified for the repository split: the wire contract is owned by contracts/.
 import {
@@ -39,10 +40,6 @@ export const CORE_REQUEST_TIMEOUT_MS = 10_000;
 export const CORE_KEEP_ALIVE_TIMEOUT_MS = 5_000;
 export const CORE_MAX_REQUESTS_PER_SOCKET = 100;
 
-const packageMetadata = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-) as { version?: unknown };
-
 if (typeof packageMetadata.version !== "string") {
   throw new TypeError("core/package.json must contain a string version");
 }
@@ -52,7 +49,9 @@ export const CORE_VERSION = packageMetadata.version;
 export interface StartCoreOptions {
   port?: number;
   databasePath?: string;
+  fixtureProbe?: FixtureProbeOptions;
 }
+export type { FixtureProbeOptions };
 
 export interface RunningCore {
   readonly host: typeof CORE_HOST;
@@ -106,8 +105,14 @@ function routeRequest(
   response: ServerResponse,
   startedAt: bigint,
   node: CoreNodeIdentity,
+  fixtureProbe?: FixtureProbe,
 ): void {
   const requestId = `req_${randomUUID()}`;
+
+  if (fixtureProbe && request.url?.startsWith("/v1/fixture/")) {
+    void fixtureProbe.route(request, response, requestId);
+    return;
+  }
 
   if (requestHasBody(request)) {
     request.resume();
@@ -223,6 +228,10 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
   validatePort(port);
 
   const requestedDatabasePath = options.databasePath ?? defaultCoreDatabasePath();
+  if (options.fixtureProbe && requestedDatabasePath !== ":memory:") {
+    throw new TypeError("Fixture probe requires an explicit isolated in-memory database");
+  }
+  const fixtureProbe = options.fixtureProbe ? new FixtureProbe(options.fixtureProbe, writeJson) : undefined;
   let runtimeLock: CoreRuntimeLock | undefined;
   let databasePath = requestedDatabasePath;
 
@@ -236,6 +245,7 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
   try {
     store = new CoreNodeStore(databasePath);
   } catch (error) {
+    fixtureProbe?.close();
     runtimeLock?.release();
     throw error;
   }
@@ -252,7 +262,7 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
       requireHostHeader: true,
     },
     (request, response) => {
-      routeRequest(request, response, startedAt, node);
+      routeRequest(request, response, startedAt, node, fixtureProbe);
     },
   );
   server.maxRequestsPerSocket = CORE_MAX_REQUESTS_PER_SOCKET;
@@ -260,6 +270,7 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
   try {
     await listen(server, port);
   } catch (error) {
+    fixtureProbe?.close();
     closeRuntimeResources(store, runtimeLock);
     throw error;
   }
@@ -267,6 +278,7 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
   const address = server.address();
   if (address === null || typeof address === "string") {
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    fixtureProbe?.close();
     closeRuntimeResources(store, runtimeLock);
     throw new Error("core server did not bind to a TCP address");
   }
@@ -285,6 +297,8 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
       }
 
       closePromise = new Promise<void>((resolve, reject) => {
+        let probeCloseError: unknown;
+        try { fixtureProbe?.close(); } catch (error) { probeCloseError = error; }
         const finish = (serverError?: Error): void => {
           try {
             closeRuntimeResources(store, runtimeLock);
@@ -295,6 +309,10 @@ export async function startCore(options: StartCoreOptions = {}): Promise<Running
 
           if (serverError) {
             reject(serverError);
+            return;
+          }
+          if (probeCloseError !== undefined) {
+            reject(probeCloseError);
             return;
           }
           resolve();

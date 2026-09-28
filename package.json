@@ -1,6 +1,6 @@
 {
   "name": "@netnavr/core",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,6 +11,10 @@
     "./contract": {
       "types": "./contracts/core-v1.d.ts",
       "default": "./contracts/core-v1.js"
+    },
+    "./fixture-contract": {
+      "types": "./contracts/fixture-v1.d.ts",
+      "default": "./contracts/fixture-v1.js"
     }
   },
   "scripts": {
