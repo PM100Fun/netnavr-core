@@ -8,6 +8,8 @@ pre-alpha source, not a completed MVP or an end-user installer.
 - Persistent SQLite Node identity, schema migration checks and a single-runtime lock.
 - Loopback-only `GET /v1/health` and `GET /v1/node`, bounded HTTP requests and errors.
 - A versioned HTTP contract consumed by [NetNavr Shell](https://github.com/PM100Fun/netnavr-shell).
+- An opt-in, authenticated engineering fixture with fixed marker commands,
+  cancellation and isolated persistence. It is disabled in normal CLI startup.
 
 Tasks, durable conversations, multiple real providers, permission orchestration
 and backup/restore workflows remain product work. Current tests do not establish
@@ -37,7 +39,7 @@ using Node's type stripping. It is not a static type check.
 
 | Identity | Value |
 | --- | --- |
-| Core component | 0.2.2 |
+| Core component | 0.2.3 |
 | HTTP API | v1 |
 | SQLite schema | 1 |
 | Import baseline | NetNavr v0.2.33, `ca6002d580cef51cab869a3a65cbcddc2dfed3c1` |
@@ -46,6 +48,13 @@ using Node's type stripping. It is not a static type check.
 The split adds a package build and contract export without changing the API or
 database schema. Shell pins an exact Core Git commit through its npm lockfile.
 Core owns `@netnavr/core/contract`; Shell must not maintain a second definition.
+The separate `@netnavr/core/fixture-contract` export owns `fixture-v1`.
+Engineering callers must explicitly select `databasePath: ":memory:"` and a
+private 32-byte capability token. Optional persistence uses a dedicated
+`fixture-v1` directory and separate synthetic SQLite schema. It never accesses
+the user's product database. Marker and revision survive restart; command IDs
+and session credentials do not. This probe does not implement conversations,
+model responses, Navigator, Tasks or user backup/restore.
 Core changes run local tests and then the consuming Shell integration tests
 before a product candidate binds the pair. Publishing a new Core commit does
 not automatically update a released Shell.
@@ -58,7 +67,7 @@ implied by this repository initialization. App packaging belongs to Shell.
 ## 中文说明
 
 Core 当前提供本地 Node 身份、SQLite 持久化、运行锁和只读 HTTP 接口。
-本仓从旧总仓 v0.2.33 导出，组件由 0.2.1 调整为 0.2.2，保留现行修复。
+本仓从旧总仓 v0.2.33 导出，保留现行修复；0.2.3新增默认关闭的隔离工程探针。
 产品 0.1—1.0 是独立的规划编号，不能将本次拆仓视为 MVP 已完成。
 共享接口以本仓 `contracts/` 为唯一维护位置；Shell 固定引用具体提交。
 Pay、私有项目文档、本机数据、上游参考检出和旧仓 Git 历史未导入。
