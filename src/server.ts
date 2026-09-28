@@ -16,7 +16,8 @@ import {
 } from "./node-store.ts";
 import { acquireCoreRuntimeLock, type CoreRuntimeLock } from "./runtime-lock.ts";
 import { prepareCoreStoragePath } from "./storage-permissions.ts";
-import { FixtureProbe, type FixtureProbeOptions } from "./fixture-probe.ts";
+import { FixtureProbe } from "./fixture-probe.ts";
+import type { StartCoreOptions, RunningCore } from "../contracts/runtime.js";
 import packageMetadata from "../package.json" with { type: "json" };
 
 // Modified for the repository split: the wire contract is owned by contracts/.
@@ -28,7 +29,8 @@ import {
   type CoreErrorEnvelope,
 } from "../contracts/core-v1.js";
 export { CORE_SERVICE, CORE_API_VERSION };
-export type { CoreHealth, CoreErrorCode, CoreErrorEnvelope };
+export type { CoreHealth, CoreNodeIdentity, CoreErrorCode, CoreErrorEnvelope };
+export type { StartCoreOptions, RunningCore, FixtureProbeOptions } from "../contracts/runtime.js";
 export const CORE_HOST = "127.0.0.1";
 export const DEFAULT_CORE_PORT = 8786;
 export const CORE_DATABASE_FILENAME = "core.sqlite";
@@ -45,21 +47,6 @@ if (typeof packageMetadata.version !== "string") {
 }
 
 export const CORE_VERSION = packageMetadata.version;
-
-export interface StartCoreOptions {
-  port?: number;
-  databasePath?: string;
-  fixtureProbe?: FixtureProbeOptions;
-}
-export type { FixtureProbeOptions };
-
-export interface RunningCore {
-  readonly host: typeof CORE_HOST;
-  readonly port: number;
-  readonly origin: string;
-  readonly node: CoreNodeIdentity;
-  close(): Promise<void>;
-}
 
 export function defaultCoreDatabasePath(): string {
   return join(homedir(), ".netnavr", "core", CORE_DATABASE_FILENAME);

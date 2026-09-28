@@ -18,8 +18,8 @@ import {
   type FixtureState,
 } from "../contracts/fixture-v1.js";
 import { FixtureStore } from "./fixture-store.ts";
-
-export interface FixtureProbeOptions { token: string; dataDirectory?: string }
+import type { FixtureProbeOptions } from "../contracts/runtime.js";
+export type { FixtureProbeOptions } from "../contracts/runtime.js";
 
 type WriteJson = (response: ServerResponse, status: number, payload: unknown, requestId: string) => void;
 interface CommandRecord {

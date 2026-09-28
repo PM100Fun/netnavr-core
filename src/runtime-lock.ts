@@ -1,14 +1,12 @@
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { ensurePrivateFile } from "./storage-permissions.ts";
+import type { CoreRuntimeLockErrorCode } from "../contracts/runtime.js";
+export type { CoreRuntimeLockErrorCode } from "../contracts/runtime.js";
 
 export const CORE_RUNTIME_LOCK_FILENAME = "core-runtime.lock";
 export const CORE_RUNTIME_ALREADY_RUNNING = "core_runtime_already_running";
 export const CORE_RUNTIME_LOCK_INVALID = "core_runtime_lock_invalid";
-
-export type CoreRuntimeLockErrorCode =
-  | typeof CORE_RUNTIME_ALREADY_RUNNING
-  | typeof CORE_RUNTIME_LOCK_INVALID;
 
 export class CoreRuntimeLockError extends Error {
   readonly code: CoreRuntimeLockErrorCode;
